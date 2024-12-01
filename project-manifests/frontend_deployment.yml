@@ -15,7 +15,7 @@ spec:
         app: project-frontend
     spec:
       containers:
-      - image: public.ecr.aws/i5a7b8h3/nti-project-frontend:Replace_your_version_here
+      - image: public.ecr.aws/i5a7b8h3/nti-project-frontend:v1.0
         name: project-frontend
         env:
         - name: REACT_APP_API_URL
