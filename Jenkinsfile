@@ -6,13 +6,13 @@ pipeline {
     }
   }
     environment {
-        DOCKER_FRONTEND_IMAGE = "public.ecr.aws/i5a7b8h3/nti-project-frontend:v${BUILD_NUMBER}.0"
-        ECR_NAME ="public.ecr.aws/i5a7b8h3/nti-project-frontend"
+        DOCKER_BACKEND_IMAGE = "public.ecr.aws/i5a7b8h3/nti-project-backend:v${BUILD_NUMBER}.0"
+        ECR_NAME ="public.ecr.aws/i5a7b8h3/nti-project-backend"
         DOCKER_LOGIN_CREDS = credentials('docker_credentials')// Replace with your Jenkins credentials ID
         GITHUB_CREDS = credentials('github')
         GITHUB_REPO = "NTI-Graduation-Project"
-        GITHUB_BRANCH = "feature/frontend"
-        DEPLOYMENT_FILE = "project-manifests/frontend_deployment.yml"
+        GITHUB_BRANCH = "feature/backend"
+        DEPLOYMENT_FILE = "project-manifests/backend_deployment.yml"
         WEBHOOK_ID ="516307081"
     }
 
@@ -38,7 +38,7 @@ pipeline {
             steps {
                 echo 'Building Docker image...'
                 sh '''
-                docker build -t $DOCKER_FRONTEND_IMAGE ./frontend
+                docker build -t $DOCKER_BACKEND_IMAGE ./backend
                 '''
             }
         }
@@ -55,7 +55,7 @@ pipeline {
             steps {
                 echo 'Pushing Docker image...'
                 sh '''
-                docker push $DOCKER_FRONTEND_IMAGE
+                docker push $DOCKER_BACKEND_IMAGE
                 '''
             }
         }
@@ -67,7 +67,7 @@ pipeline {
                     sed -i "s|\\(image: $ECR_NAME:\\)[^ ]*|\\1v${BUILD_NUMBER}.0|g" $DEPLOYMENT_FILE
                     git config --global --add safe.directory $WORKSPACE
                     git add ./$DEPLOYMENT_FILE
-                    git commit -m "Update Frontend deployment image to version ${BUILD_NUMBER}"
+                    git commit -m "Update backend deployment image to version ${BUILD_NUMBER}"
                     git push origin ${GITHUB_BRANCH}
                 '''
             }
@@ -79,7 +79,7 @@ pipeline {
             curl -X POST \
                 -H "Authorization: token $GITHUB_CREDS_PSW" \
                 -H "Accept: application/vnd.github.v3+json" \
-                -d '{"title":"Frontend new feature","body":"Please pull this in!","head":"'"${GITHUB_BRANCH}"'","base":"main"}' \
+                -d '{"title":"Backend new feature","body":"Please pull this in!","head":"'"${GITHUB_BRANCH}"'","base":"main"}' \
                      https://api.github.com/repos/$GITHUB_CREDS_USR/$GITHUB_REPO/pulls
             '''
         }
@@ -103,7 +103,7 @@ pipeline {
                 def jobNameDecoded = java.net.URLDecoder.decode(env.JOB_NAME, "UTF-8")
                 slackSend(
                     color: 'good', 
-                    message: ":white_check_mark:*Build Successful*\nJob_Name: ${jobNameDecoded}\nBuild_Number: #${BUILD_NUMBER}\nStatus: Frontend Image is built successfully and a Pull Request is created\nMore info at: ${BUILD_URL}.",
+                    message: ":white_check_mark:*Build Successful*\nJob_Name: ${jobNameDecoded}\nBuild_Number: #${BUILD_NUMBER}\nStatus: Backend Image is built successfully and a Pull Request is created\nMore info at: ${BUILD_URL}.",
                     channel: '#nti-graduation-project'
                 )
         }
@@ -114,7 +114,7 @@ pipeline {
                 def jobNameDecoded = java.net.URLDecoder.decode(env.JOB_NAME, "UTF-8")
                 slackSend(
                     color: 'danger', 
-                    message: ":x:*Build Failed*\nJob_Name: ${jobNameDecoded}\nBuild_Number: #${BUILD_NUMBER}\nStatus: Build Failed.\nMore info at: ${BUILD_URL}",
+                    message: ":x:*Build Failed*\nJob_Name: ${jobNameDecoded}\nBuild_Number: #${BUILD_NUMBER}\nStatus: Build Failed.\nMore Info at: ${BUILD_URL}",
                     channel: '#nti-graduation-project'
                 )
         }
