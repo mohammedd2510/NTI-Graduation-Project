@@ -1,0 +1,30 @@
+- name: Update_cache
+  yum:
+      update_cache: yes
+
+- name: Install Docker
+  yum:
+   name:
+     - amazon-linux-extras
+     - docker
+   state: present
+
+- name: Enable the Docker service
+  systemd:
+    name: docker
+    enabled: yes
+
+- name: Start the Docker service
+  systemd:
+    name: docker
+    state: started
+- name: Set permissions for /var/run/docker.sock
+  file:
+        path: /var/run/docker.sock
+        mode: "0666"
+        state: file
+
+- name: restart the Docker service
+  systemd:
+    name: docker
+    state: restarted

@@ -1,0 +1,158 @@
+- name: Download Jenkins repository file
+  get_url:
+    url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    dest: /etc/yum.repos.d/jenkins.repo
+
+- name: Import Jenkins-CI key
+  shell: rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+- name: Install Java
+  yum:
+    name: "{{ java_packages }}"
+    state: present
+
+- name: Install Git
+  yum:
+    name: "git"
+    state: present
+
+- name: Install Jenkins
+  yum:
+    name: "{{ jenkins_packages }}"
+    state: present
+
+- name: Start Jenkins service
+  service:
+    name: jenkins
+    state: started
+
+- name: read admin pwd
+  shell: cat /var/lib/jenkins/secrets/initialAdminPassword
+  register: sercetpwd
+
+- name: unlock and add admin user
+  jenkins_script:
+     script: |
+      import jenkins.model.*
+      import hudson.security.*
+      def instance = Jenkins.getInstance()
+      def hudsonRealm = new HudsonPrivateSecurityRealm(false)
+      hudsonRealm.createAccount('jenkins', '${user_pwd}')
+      instance.setSecurityRealm(hudsonRealm)
+      def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
+      strategy.setAllowAnonymousRead(false)
+      instance.setAuthorizationStrategy(strategy)
+      instance.save()
+     args:
+      user_pwd: "{{jenkins_pwd }}"
+     user: admin
+     password: "{{ sercetpwd.stdout }}"
+
+- name: complete setup wizard
+  jenkins_script:
+     script: |
+      import static jenkins.model.Jenkins.instance as jenkins
+      import jenkins.install.InstallState
+      if (!jenkins.installState.isSetupComplete()) {
+        InstallState.INITIAL_SETUP_COMPLETED.initializeState()
+      }
+     user: admin
+     password: "{{ sercetpwd.stdout }}"
+
+- name: install plugin
+  jenkins_plugin:
+     name: "{{ item }}"
+     state: latest
+     url_username: admin
+     url_password: "{{ sercetpwd.stdout }}"
+  with_items:
+     - git
+     - pipeline
+     - github
+     - docker-plugin
+     - slack
+     - ssh-agent
+     - credentials-binding
+     - docker-workflow
+     - aws-credentials  # Additional AWS Credentials Plugin
+     - multibranch-scan-webhook-trigger
+
+
+- name: Restart Jenkins service
+  service:
+    name: jenkins
+    state: restarted  
+
+- name: Get Jenkins crumb
+  shell: |
+    CRUMB=$(curl -k 'http://{{jenkins_user}}:{{jenkins_pwd}}@127.0.0.1:8080/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)' -c cookies.txt)
+    echo $CRUMB
+  register: crumb_output
+  ignore_errors: yes
+
+- name: Generate a new API token
+  shell: |
+    TOKEN=$(curl -k 'http://{{jenkins_user}}:{{jenkins_pwd}}@127.0.0.1:8080/user/jenkins/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken' \
+    --data 'newTokenName=kb-token' \
+    -b cookies.txt \
+    -H "$(echo {{ crumb_output.stdout }})")
+    echo $TOKEN
+  register: api_token_output
+  ignore_errors: yes
+
+- name: Extract tokenValue from JSON response using dictionary access
+  set_fact:
+    api_token_value: "{{ (api_token_output.stdout | from_json).data.tokenValue }}"
+
+- name: Create GitHub credentials
+  shell: |
+      curl -X POST \
+        -u "{{ jenkins_user }}:{{ api_token_value }}" \
+        -H "Jenkins-Crumb: {{ crumb_output.stdout.split(':')[1] }}" \
+        -d 'json={
+          "": "0",
+          "credentials": {
+            "scope": "GLOBAL",
+            "id": "{{ github_id }}",
+            "username": "{{ github_username }}",
+            "password": "{{ github_token }}",
+            "description": "github credentials",
+            "$class": "com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl"
+          }
+        }' \
+        'http://127.0.0.1:8080/credentials/store/system/domain/_/createCredentials'    
+
+- name: Create AWS ECR credentials
+  shell: |
+      curl -X POST \
+        -u "{{ jenkins_user }}:{{ api_token_value }}" \
+        -H "Jenkins-Crumb: {{ crumb_output.stdout.split(':')[1] }}" \
+        -d 'json={
+          "": "0",
+          "credentials": {
+            "scope": "GLOBAL",
+            "id": "{{aws_ecr_id }}",
+            "username": "{{ aws_ecr_user }}",
+            "password": "{{ aws_ecr_password }}",
+            "description": "aws ecr credentials",
+            "$class": "com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl"
+          }
+        }' \
+        'http://127.0.0.1:8080/credentials/store/system/domain/_/createCredentials'    
+
+- name: Create Slack token credentials
+  shell: |
+      curl -X POST \
+        -u "{{ jenkins_user }}:{{ api_token_value }}" \
+        -H "Jenkins-Crumb: {{ crumb_output.stdout.split(':')[1] }}" \
+        -d 'json={
+          "": "0",
+          "credentials": {
+            "scope": "GLOBAL",
+            "id": "{{slack_id}}",
+            "secret": "{{ slack_secret}}",
+            "description": "slack credentials",
+            "$class": "org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl"
+          }
+        }' \
+        'http://127.0.0.1:8080/credentials/store/system/domain/_/createCredentials'            

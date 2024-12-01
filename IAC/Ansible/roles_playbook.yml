@@ -1,0 +1,27 @@
+- name: Cloud_Watch_Agent_Logs_Play
+  hosts: all
+  gather_facts: false
+  roles:
+    - Cloud_Watch_Agent_Installation
+
+- name: Jenkins_Server_Play
+  hosts: Jenkins_EC2
+  gather_facts: false
+  roles:
+    - Jenkins_Server_Installation
+
+- name: Docker_installation_Play
+  hosts: Jenkins_EC2
+  gather_facts: false
+  roles:
+    - Docker_installation
+
+- name: Argocd_Installation_Play
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tasks:  
+    - name: Argocd_Installation
+      command: bash Argocd_Installation.sh
+
