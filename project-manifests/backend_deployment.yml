@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: project-backend
+  name: project-backend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: project-backend
+  template:
+    metadata:
+      labels:
+        app: project-backend
+    spec:
+      containers:
+      - image: public.ecr.aws/i5a7b8h3/nti-project-backend:replace_your_version_here
+        name: project-backend

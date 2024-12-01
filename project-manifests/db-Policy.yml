@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: project-db  # Targeting the DB pod
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: project-backend  # Allow traffic from backend pod
+      ports:
+        - protocol: TCP
+          port: 27017  # Adjust based on your DB service port (MongoDB typically uses 27017)

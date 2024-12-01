@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-object
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: "*.us-east-1.elb.amazonaws.com"
+    http:
+       paths: 
+       - pathType: Prefix
+         path: /
+         backend:
+          service:
+            name: frontend-svc
+            port:
+              number: 3000
+       - pathType: Prefix
+         path: /api
+         backend:
+          service:
+            name: backend-svc
+            port:
+              number: 3001       
+                

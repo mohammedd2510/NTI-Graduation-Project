@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: project-db
+  name: project-db-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: project-db
+  template:
+    metadata:
+      labels:
+        app: project-db
+    spec:
+      containers:
+      - image: mongo:latest
+        name: project-db

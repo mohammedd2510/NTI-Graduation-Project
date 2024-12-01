@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: project-frontend  # Targeting the DB pod
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: project-backend  # Allow traffic from backend pod
+        - podSelector:
+            matchLabels:     
+              app.kubernetes.io/name: nginx-ingress  # Target the frontend pod
+      ports:
+        - protocol: TCP
+          port: 3000  
