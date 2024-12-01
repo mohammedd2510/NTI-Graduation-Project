@@ -19,4 +19,4 @@ spec:
         name: project-frontend
         env:
         - name: REACT_APP_API_URL
-          value: http://a7c660cb8da7a4a67a79bac06a2188ca-1289651843.us-east-1.elb.amazonaws.com/api
+          value: http://ace729b33e53d4182b3b2e8a48cff00f-2054759395.us-east-1.elb.amazonaws.com/api
