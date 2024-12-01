@@ -76,6 +76,7 @@
      - docker-workflow
      - aws-credentials  # Additional AWS Credentials Plugin
      - multibranch-scan-webhook-trigger
+     - multibranch-build-strategy-extension
 
 
 - name: Restart Jenkins service
