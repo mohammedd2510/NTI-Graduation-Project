@@ -57,8 +57,8 @@ Ensure you have the following installed on your local machine:
 1. **Clone the Repository**:  
    Clone this repository and navigate to the project directory:
    ```bash
-   git clone -b IAC https://github.com/yourusername/project-repo.git
-   cd project-repo
+   git clone -b IAC https://github.com/mohammedd2510/NTI-Graduation-Project.git
+   cd NTI-Graduation-Project
 2. **Set Up AWS Credentials**  
    Configure AWS CLI with your AWS account credentials:  
    ```bash
